@@ -1,22 +1,27 @@
 from django_kissmetrics import base, models, settings
 
+
 def kissmetrics(request):
     """Set some upvote template variables that are expected on all requests"""
     identify_kiss = False
     kissmetrics_tasks = None
     user = request.user
 
-    # these values only need to be processed for GET requests, should reduce thrash slightly
+    # these values only need to be processed for GET requests,
+    #   should reduce thrash slightly
     if 'GET' == request.method:
         meta = request.META or {}
         path = meta.get('PATH_INFO', '')
         is_path_media_url = settings.MEDIA_URL and settings.MEDIA_URL in path
-        is_path_static_url = settings.STATIC_URL and settings.STATIC_URL in path
-        ignored_path = not path or 'favicon' in path or is_path_media_url or is_path_static_url or '__debug__/' in path
+        is_path_static_url = (settings.STATIC_URL and
+                              settings.STATIC_URL in path)
+        ignored_path = (not path or 'favicon' in path or is_path_media_url or
+                        is_path_static_url or '__debug__/' in path)
 
         # don't attempt to record if not a real page or skip_kiss is set
         if not ignored_path and not  meta.get('skip_kiss'):
-            kissmetrics_tasks = request.session.pop(base.SESSION_KEY_KISSMETRICS, None)
+            kissmetrics_tasks = request.session.pop(
+                base.SESSION_KEY_KISSMETRICS, None)
 
             # track the delayed events internally
             if kissmetrics_tasks and settings.KISSMETRICS_TRACK_INTERNALLY:
@@ -32,7 +37,8 @@ def kissmetrics(request):
                 # associate the user with the KISS identity
                 if settings.KISSMETRICS_TRACK_INTERNALLY:
                     identity = base.get_identity_from_cookie(request)
-                    models.Events.objects.filter(identity=identity).update(user_id=user.id)
+                    models.Events.objects.filter(identity=identity).update(
+                        user_id=user.id)
 
     return {
         'identify_kiss': identify_kiss,

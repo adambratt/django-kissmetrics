@@ -1,24 +1,26 @@
 import urllib
 
-from KISSmetrics import KM
-
 from django.contrib.auth.models import User
 from django.http import HttpRequest
+from django.test.client import RequestFactory
 from django.utils.encoding import smart_str
+from KISSmetrics import KM
 
 from django_kissmetrics import models, log, settings
 
 SESSION_KEY_KISSMETRICS = 'kissmetrics_tasks'
 
+
 class KISSMetricTask(object):
     """
-    Data class used to store server-side KISS events that need to be included on the next page load.
+    Data class used to store server-side KISS events that need to
+    be included on the next page load.
     """
 
     def __init__(self, action, name, data=None):
-        self.action=action
-        self.name=name
-        self.data=data
+        self.action = action
+        self.name = name
+        self.data = data
 
     def toJS(self):
         """
@@ -38,7 +40,7 @@ class KISSMetricTask(object):
         if self.data:
             arr = []
 
-            for key,value in self.data.items():
+            for key, value in self.data.items():
                 arr.append("'%s':'%s'" % (key, value,))
             str += ',{%s}' % ','.join(arr)
 
@@ -61,6 +63,7 @@ class KISSMetricTask(object):
             type=self.action,
             user_id=user and user.id,
         )
+
 
 class KMWrapper(KM):
     """
@@ -85,7 +88,7 @@ class KMWrapper(KM):
             )
 
             if 'e' == type:
-                kissmetric.action=data['_n']
+                kissmetric.action = data['_n']
 
             kissmetric.save()
 
@@ -93,10 +96,11 @@ class KMWrapper(KM):
         # we need to encode unicode data on its way out the door.
         type = smart_str(type)
         stringified = {}
-        for k,v in data.items():
+        for k, v in data.items():
             stringified[smart_str(k)] = smart_str(v)
         self.track_request(data, type)
         super(KMWrapper, self).request(type, stringified, update)
+
 
 class KMMock(KMWrapper):
     """
@@ -107,14 +111,17 @@ class KMMock(KMWrapper):
         self.track_request(data, type)
         pass
 
+
 def get_identity_from_cookie(request):
     """
     Attempts to find the KISS identity from the COOKIEs.
     """
-    identity = request.COOKIES.get('km_ni', '') or request.COOKIES.get('km_ai', '')
+    identity = (request.COOKIES.get('km_ni', '') or
+                request.COOKIES.get('km_ai', ''))
     if identity is not None:
         identity = urllib.unquote(identity)
     return identity
+
 
 def get_identity_and_user(user_or_request):
     """
@@ -122,8 +129,9 @@ def get_identity_and_user(user_or_request):
     """
     user = None
 
-    if isinstance(user_or_request, HttpRequest):
-        if getattr(user_or_request, 'user', None) and user_or_request.user.is_authenticated():
+    if isinstance(user_or_request, (HttpRequest, RequestFactory)):
+        if (getattr(user_or_request, 'user', None) and
+            user_or_request.user.is_authenticated()):
             user = user_or_request.user
             identity = user.id
         else:
@@ -132,18 +140,23 @@ def get_identity_and_user(user_or_request):
         user = user_or_request
         identity = user_or_request.id
     else:
-        raise ValueError('Invalid object passed into get_kiss_instance, should be request or user, but was %s' % type(user_or_request))
+        raise ValueError('Invalid object passed into get_kiss_instance, '
+                         'should be request or user, but was %s' %
+                         type(user_or_request))
 
     if not identity:
         raise ValueError('User is required for kissmetric tracking')
     return identity, user
 
+
 def get_kissmetrics_instance(user_or_request):
     """
     Creates a kiss instance using a Django request or auth user object.
         If an auth user is provided that will be used as the identity
-        If a request is provided and the user is authenticated, then it will use that as the identity
-        Otherwise, it will attempt to find the kiss identity variables from the cookie
+        If a request is provided and the user is authenticated,
+            then it will use that as the identity
+        Otherwise, it will attempt to find the kiss identity variables
+            from the cookie
     """
     identity, user = get_identity_and_user(user_or_request)
 
@@ -155,6 +168,7 @@ def get_kissmetrics_instance(user_or_request):
     km.user = user
     km.identify(identity)
     return km
+
 
 def queue_kissmetrics_task(request, task):
     """
