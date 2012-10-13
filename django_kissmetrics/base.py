@@ -160,7 +160,7 @@ def get_kissmetrics_instance(user_or_request):
     """
     identity, user = get_identity_and_user(user_or_request)
 
-    if (user and user.kissmetrics_ignore) or settings.KISSMETRICS_IGNORE:
+    if (user and getattr(user, 'kissmetrics_ignore', False)) or settings.KISSMETRICS_IGNORE:
         km = KMMock(settings.KISSMETRICS_API_KEY)
     else:
         km = KMWrapper(settings.KISSMETRICS_API_KEY)
