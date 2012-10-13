@@ -133,12 +133,12 @@ def get_identity_and_user(user_or_request):
         if (getattr(user_or_request, 'user', None) and
             user_or_request.user.is_authenticated()):
             user = user_or_request.user
-            identity = user.id
+            identity = user.email
         else:
             identity = get_identity_from_cookie(user_or_request)
     elif isinstance(user_or_request, User):
         user = user_or_request
-        identity = user_or_request.id
+        identity = user_or_request.email
     else:
         raise ValueError('Invalid object passed into get_kiss_instance, '
                          'should be request or user, but was %s' %
